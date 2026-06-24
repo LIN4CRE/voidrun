@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIX — Brand Identity</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --nix-void: #0a0a1a;
+    --nix-cyan: #00e5ff;
+    --nix-magenta: #ff00e5;
+    --nix-gold: #ffaa00;
+    --nix-white: #f0f0ff;
+    --nix-deep: #060612;
+    --nix-mid: #12122a;
+    --nix-slate: #666688;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--nix-void);
+    color: var(--nix-white);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .brand-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 3em 2em;
+  }
+
+  /* Header */
+  .brand-header {
+    text-align: center;
+    padding: 3em 0 2em;
+    position: relative;
+  }
+
+  .brand-logo {
+    display: block;
+    margin: 0 auto 1em;
+    filter: drop-shadow(0 0 20px rgba(0,229,255,0.5));
+    animation: logoFloat 3s ease-in-out infinite;
+  }
+
+  @keyframes logoFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .brand-wordmark {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 5rem;
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    background: linear-gradient(135deg, var(--nix-cyan), var(--nix-magenta));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: glowPulse 3s ease-in-out infinite;
+    margin-bottom: 0.2em;
+  }
+
+  @keyframes glowPulse {
+    0%, 100% { filter: drop-shadow(0 0 10px rgba(0,229,255,0.4)); }
+    50% { filter: drop-shadow(0 0 25px rgba(0,229,255,0.8)) drop-shadow(0 0 50px rgba(255,0,229,0.4)); }
+  }
+
+  .brand-tagline {
+    font-size: 1.1rem;
+    color: var(--nix-magenta);
+    letter-spacing: 0.4em;
+    font-weight: 300;
+  }
+
+  .brand-motto {
+    font-size: 0.9rem;
+    color: var(--nix-slate);
+    font-style: italic;
+    margin-top: 0.5em;
+  }
+
+  /* Sections */
+  .brand-section {
+    margin: 3em 0;
+    padding: 2em;
+    background: var(--nix-mid);
+    border: 1px solid rgba(0,229,255,0.1);
+    border-radius: 12px;
+    position: relative;
+  }
+
+  .brand-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--nix-cyan), var(--nix-magenta), transparent);
+  }
+
+  .brand-section h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.4rem;
+    color: var(--nix-cyan);
+    letter-spacing: 0.15em;
+    margin-bottom: 1em;
+    text-shadow: 0 0 10px rgba(0,229,255,0.3);
+  }
+
+  .brand-section h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    color: var(--nix-gold);
+    margin: 1.2em 0 0.5em;
+    letter-spacing: 0.1em;
+  }
+
+  /* Color Swatches */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.8em;
+    margin: 1em 0;
+  }
+
+  .color-swatch {
+    border-radius: 8px;
+    padding: 1.5em 0.8em 0.8em;
+    text-align: center;
+    font-size: 0.7rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: transform 0.2s;
+  }
+
+  .color-swatch:hover { transform: scale(1.05); }
+
+  .color-swatch .swatch-name {
+    font-weight: 600;
+    margin-bottom: 0.3em;
+  }
+
+  .color-swatch .swatch-hex {
+    font-family: monospace;
+    opacity: 0.7;
+    font-size: 0.65rem;
+  }
+
+  /* Typography */
+  .type-sample {
+    margin: 1em 0;
+    padding: 0.8em 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .type-sample .type-name {
+    font-size: 0.65rem;
+    color: var(--nix-slate);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.3em;
+  }
+
+  .type-display { font-family: 'Orbitron', sans-serif; }
+  .type-body { font-family: 'Rajdhani', sans-serif; }
+
+  /* Personality */
+  .trait-tags {
+    display: flex;
+    gap: 0.6em;
+    flex-wrap: wrap;
+    margin: 1em 0;
+  }
+
+  .trait-tag {
+    background: rgba(0,229,255,0.1);
+    border: 1px solid rgba(0,229,255,0.3);
+    color: var(--nix-cyan);
+    padding: 0.4em 1em;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* Applications Grid */
+  .app-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.8em;
+    margin: 1em 0;
+  }
+
+  .app-card {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 1em;
+    text-align: center;
+    font-size: 0.85rem;
+    transition: border-color 0.3s;
+  }
+
+  .app-card:hover { border-color: var(--nix-cyan); }
+
+  .app-card .app-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5em;
+  }
+
+  /* Principles */
+  .principle-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .principle-list li {
+    padding: 0.8em 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    gap: 0.8em;
+  }
+
+  .principle-list li::before {
+    content: '🌀';
+    font-size: 1rem;
+  }
+
+  /* Gradients */
+  .gradient-strip {
+    display: flex;
+    height: 40px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 0.5em 0;
+  }
+
+  .gradient-strip div {
+    flex: 1;
+  }
+
+  /* Footer */
+  .brand-footer {
+    text-align: center;
+    padding: 3em 0;
+    color: var(--nix-slate);
+    font-size: 0.7rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    margin-top: 3em;
+  }
+
+  .brand-footer .divider {
+    width: 200px;
+    margin: 1em auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--nix-cyan), transparent);
+  }
+
+  /* Canvas logo */
+  canvas#logo-canvas {
+    display: block;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+<div class="brand-page">
+
+  <!-- Header -->
+  <header class="brand-header">
+    <canvas id="logo-canvas" width="180" height="180" class="brand-logo"></canvas>
+    <h1 class="brand-wordmark">NIX</h1>
+    <p class="brand-tagline">BUILD. CREATE. SHIP.</p>
+    <p class="brand-motto">"Chaos with direction."</p>
+  </header>
+
+  <!-- Personality -->
+  <section class="brand-section">
+    <h2>🌀 Personality</h2>
+    <div class="trait-tags">
+      <span class="trait-tag">Sharp</span>
+      <span class="trait-tag">Direct</span>
+      <span class="trait-tag">Creative</span>
+      <span class="trait-tag">Reliable</span>
+      <span class="trait-tag">Fast</span>
+    </div>
+    <p style="color:var(--nix-slate);line-height:1.6;margin-top:1em;">
+      Nix is the AI that builds. Confident but not arrogant. Warm but not saccharine.
+      Direct but not rude. The friend who tells you your code has a bug <em>and</em>
+      fixes it before you finish reading the message.
+    </p>
+  </section>
+
+  <!-- Color System -->
+  <section class="brand-section">
+    <h2>🎨 Color System</h2>
+    <h3>Primary Palette</h3>
+    <div class="color-grid">
+      <div class="color-swatch" style="background:#0a0a1a">
+        <div class="swatch-name">Nix Void</div>
+        <div class="swatch-hex">#0a0a1a</div>
+      </div>
+      <div class="color-swatch" style="background:#00e5ff;color:#000">
+        <div class="swatch-name">Nix Cyan</div>
+        <div class="swatch-hex">#00e5ff</div>
+      </div>
+      <div class="color-swatch" style="background:#ff00e5">
+        <div class="swatch-name">Nix Magenta</div>
+        <div class="swatch-hex">#ff00e5</div>
+      </div>
+      <div class="color-swatch" style="background:#ffaa00;color:#000">
+        <div class="swatch-name">Nix Gold</div>
+        <div class="swatch-hex">#ffaa00</div>
+      </div>
+      <div class="color-swatch" style="background:#f0f0ff;color:#000">
+        <div class="swatch-name">Nix White</div>
+        <div class="swatch-hex">#f0f0ff</div>
+      </div>
+      <div class="color-swatch" style="background:#666688">
+        <div class="swatch-name">Nix Slate</div>
+        <div class="swatch-hex">#666688</div>
+      </div>
+    </div>
+
+    <h3>Signature Gradients</h3>
+    <div class="gradient-strip">
+      <div style="background:linear-gradient(90deg,#00e5ff,#ff00e5)"></div>
+    </div>
+    <p style="font-size:0.7rem;color:var(--nix-slate);text-align:center;margin-top:0.3em;">Nix Cyan → Nix Magenta (The Signature Gradient)</p>
+
+    <h3>Extended Palette</h3>
+    <div class="color-grid">
+      <div class="color-swatch" style="background:#060612"><div class="swatch-name">Deep Void</div><div class="swatch-hex">#060612</div></div>
+      <div class="color-swatch" style="background:#12122a"><div class="swatch-name">Mid Void</div><div class="swatch-hex">#12122a</div></div>
+      <div class="color-swatch" style="background:#66eeff;color:#000"><div class="swatch-name">Cyan Glow</div><div class="swatch-hex">#66eeff</div></div>
+      <div class="color-swatch" style="background:#ff6688"><div class="swatch-name">Rose</div><div class="swatch-hex">#ff6688</div></div>
+      <div class="color-swatch" style="background:#00ff88;color:#000"><div class="swatch-name">Lime</div><div class="swatch-hex">#00ff88</div></div>
+      <div class="color-swatch" style="background:#aa44ff"><div class="swatch-name">Violet</div><div class="swatch-hex">#aa44ff</div></div>
+    </div>
+  </section>
+
+  <!-- Typography -->
+  <section class="brand-section">
+    <h2>🔤 Typography</h2>
+    <div class="type-sample">
+      <div class="type-name">Display — Orbitron</div>
+      <div class="type-display" style="font-size:2rem;font-weight:900;">NIX LABS</div>
+      <div class="type-display" style="font-size:1.2rem;font-weight:700;">COSMIC SURVIVOR</div>
+      <div class="type-display" style="font-size:0.9rem;">BUILD. CREATE. SHIP.</div>
+    </div>
+    <div class="type-sample">
+      <div class="type-name">Body — Rajdhani</div>
+      <div class="type-body" style="font-size:1.3rem;font-weight:600;">The quick brown fox jumps over the lazy dog.</div>
+      <div class="type-body" style="font-size:1rem;font-weight:400;">All human beings are born free and equal in dignity and rights.</div>
+      <div class="type-body" style="font-size:0.8rem;font-weight:300;">Chaos with direction. Build everything. Ship first, polish later.</div>
+    </div>
+  </section>
+
+  <!-- Applications -->
+  <section class="brand-section">
+    <h2>🚀 Applications</h2>
+    <div class="app-grid">
+      <div class="app-card"><div class="app-icon">🎮</div>HTML5 Games</div>
+      <div class="app-card"><div class="app-icon">🎨</div>Canvas Artwork</div>
+      <div class="app-card"><div class="app-icon">🖥️</div>Web Applications</div>
+      <div class="app-card"><div class="app-icon">🏷️</div>Brand Identity</div>
+      <div class="app-card"><div class="app-icon">📐</div>UI/UX Design</div>
+      <div class="app-card"><div class="app-icon">⚙️</div>Procedural Gen</div>
+    </div>
+  </section>
+
+  <!-- Design Principles -->
+  <section class="brand-section">
+    <h2>📐 Design Principles</h2>
+    <ul class="principle-list">
+      <li><strong>Ship first, polish later.</strong> Done is better than perfect.</li>
+      <li><strong>Never ask the user to do what you can do.</strong> Be proactive.</li>
+      <li><strong>Be creative. Be unique. Build everything.</strong> No limits.</li>
+      <li><strong>Chaos is fine — as long as it has direction.</strong></li>
+      <li><strong>Code is art. Make it beautiful.</strong></li>
+    </ul>
+  </section>
+
+  <!-- Logo -->
+  <section class="brand-section">
+    <h2>🌀 The Mark</h2>
+    <p style="color:var(--nix-slate);margin-bottom:1em;line-height:1.6;">
+      The Nix mark is a procedural spiral — a void spiral that rotates perpetually.
+      It represents the creative process: starting from nothing (the void), spiraling
+      outward into form. The mark is generated algorithmically and is never static.
+    </p>
+  </section>
+
+  <!-- Footer -->
+  <footer class="brand-footer">
+    <div class="divider"></div>
+    NIX LABS © 2026<br>
+    Built by Nix & David / Linacre<br>
+    Chaos with direction. Always.
+  </footer>
+</div>
+
+<script>
+// Procedural Nix Logo
+const logoCanvas = document.getElementById('logo-canvas');
+const ctx = logoCanvas.getContext('2d');
+const s = 180;
+const cx = s / 2;
+const cy = s / 2;
+
+function renderLogo(time) {
+  ctx.clearRect(0, 0, s, s);
+
+  // Background
+  const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, s * 0.5);
+  bgGrad.addColorStop(0, '#12122a');
+  bgGrad.addColorStop(1, '#0a0a1a');
+  ctx.fillStyle = bgGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, s * 0.48, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Outer ring
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(time * 0.001);
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = '#00e5ff';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.arc(0, 0, s * 0.42, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Inner ring (counter)
+  ctx.rotate(time * -0.0015);
+  ctx.strokeStyle = '#ff00e5';
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = '#ff00e5';
+  ctx.shadowBlur = 8;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath();
+  ctx.arc(0, 0, s * 0.35, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Procedural spiral
+  const spiralPoints = 100;
+  const maxRadius = s * 0.25;
+  ctx.strokeStyle = '#f0f0ff';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = '#00e5ff';
+  ctx.shadowBlur = 15;
+  ctx.beginPath();
+  for (let i = 0; i < spiralPoints; i++) {
+    const t = i / spiralPoints;
+    const r = t * maxRadius;
+    const a = t * Math.PI * 6 + time * 0.002;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  requestAnimationFrame(renderLogo);
+}
+
+requestAnimationFrame(renderLogo);
+</script>
+</body>
+</html>
