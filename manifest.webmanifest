@@ -1,0 +1,14 @@
+{
+  "name": "VOIDRUN",
+  "short_name": "VOIDRUN",
+  "description": "A neon HTML5 bullet-heaven survivor. Run the void. Survive the storm.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#050510",
+  "theme_color": "#0a0a1a",
+  "categories": ["games", "entertainment"],
+  "lang": "en",
+  "prefer_related_applications": false
+}
