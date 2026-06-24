@@ -20981,6 +20981,501 @@ class GamepadRumble {
 // Initialize gamepad support
 const gamepadRumble = new GamepadRumble();
 
+// ====================================================================
+//  VOIDRUN v2.1 — Enhanced SFX, Visuals & UI Polish
+// ====================================================================
+
+// ====================================================================
+//  ENHANCED SOUND SYSTEM — Richer, more varied sound effects
+// ====================================================================
+
+// Extend SoundSystem with higher-quality synthesized sounds
+SoundSystem.prototype.sfxShoot = function(freq = 800, type = 'square') {
+  if (!this.initialized || !this.ctx) return;
+  try {
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(freq * 3, now);
+    filter.frequency.exponentialRampToValueAtTime(freq * 0.5, now + 0.08);
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.3, now + 0.12);
+
+    gain.gain.setValueAtTime(0.12 * this.volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  } catch (e) {}
+};
+
+SoundSystem.prototype.sfxExplosion = function(intensity = 1) {
+  if (!this.initialized || !this.ctx) return;
+  try {
+    const now = this.ctx.currentTime;
+    // Low rumble
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(80, now);
+    osc1.frequency.exponentialRampToValueAtTime(20, now + 0.4 * intensity);
+    gain1.gain.setValueAtTime(0.2 * intensity * this.volume, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5 * intensity);
+    osc1.connect(gain1); gain1.connect(this.masterGain);
+    osc1.start(now); osc1.stop(now + 0.5);
+
+    // Crackle
+    const bufferSize = this.ctx.sampleRate * 0.3;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.15 * intensity * this.volume, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    noise.connect(noiseGain); noiseGain.connect(this.masterGain);
+    noise.start(now);
+  } catch (e) {}
+};
+
+SoundSystem.prototype.sfxWhoosh = function() {
+  if (!this.initialized || !this.ctx) return;
+  try {
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
+    gain.gain.setValueAtTime(0.08 * this.volume, now);
+    gain.gain.linearRampToValueAtTime(0.001, now + 0.25);
+    osc.connect(gain); gain.connect(this.masterGain);
+    osc.start(now); osc.stop(now + 0.3);
+  } catch (e) {}
+};
+
+SoundSystem.prototype.sfxClick = function() {
+  if (!this.initialized || !this.ctx) return;
+  try {
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200, now);
+    gain.gain.setValueAtTime(0.1 * this.volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+    osc.connect(gain); gain.connect(this.masterGain);
+    osc.start(now); osc.stop(now + 0.05);
+  } catch (e) {}
+};
+
+SoundSystem.prototype.sfxHover = function() {
+  if (!this.initialized || !this.ctx) return;
+  try {
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.linearRampToValueAtTime(800, now + 0.06);
+    gain.gain.setValueAtTime(0.04 * this.volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    osc.connect(gain); gain.connect(this.masterGain);
+    osc.start(now); osc.stop(now + 0.1);
+  } catch (e) {}
+};
+
+// Override weapon fire sounds with richer versions
+SoundSystem.prototype.sfxWeaponFire = function(weaponId) {
+  if (!this.initialized || !this.ctx) return;
+  switch (weaponId) {
+    case 'magicBolt': this.sfxShoot(900, 'square'); break;
+    case 'fireball': this.sfxExplosion(0.4); break;
+    case 'lightning': this.sfxShoot(2000, 'sawtooth'); this.playNoise(0.04, 0.06); break;
+    case 'frostNova': this.sfxWhoosh(); break;
+    case 'voidBeam': this.sfxShoot(200, 'sawtooth'); break;
+    case 'energyOrb': this.sfxShoot(500, 'triangle'); break;
+    case 'shadowScythe': this.sfxWhoosh(); this.sfxShoot(300, 'sawtooth'); break;
+    case 'meteor': this.sfxExplosion(0.7); break;
+    case 'poisonCloud': this.sfxShoot(200, 'sine'); break;
+    case 'mirrorImage': this.sfxShoot(800, 'triangle'); break;
+    case 'chainStorm': this.sfxShoot(1500, 'sawtooth'); this.sfxShoot(1000, 'square'); break;
+    case 'plasmaBall': this.sfxShoot(600, 'triangle'); break;
+    default: this.sfxShoot(800, 'sine'); break;
+  }
+};
+
+SoundSystem.prototype.sfxLevelUp = function() {
+  if (!this.initialized || !this.ctx) return;
+  const notes = [400, 500, 600, 800, 1000];
+  notes.forEach((freq, i) => {
+    setTimeout(() => { this.sfxShoot(freq, 'triangle'); }, i * 70);
+  });
+};
+
+// Enhanced music - layered drone with subtle rhythm
+SoundSystem.prototype.startMusic = function() {
+  if (!this.initialized || !this.ctx) return;
+  try {
+    const now = this.ctx.currentTime;
+    this._musicNodes = [];
+
+    // Deep drone
+    const drone = this.ctx.createOscillator();
+    const droneGain = this.ctx.createGain();
+    drone.type = 'sine';
+    drone.frequency.value = 55;
+    droneGain.gain.setValueAtTime(0.03 * this.volume, now);
+    drone.connect(droneGain); droneGain.connect(this.masterGain);
+    drone.start(now);
+    this._musicNodes.push({ osc: drone });
+
+    // Sub drone with LFO
+    const sub = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    const lfo = this.ctx.createOscillator();
+    const lfoGain = this.ctx.createGain();
+    sub.type = 'sine';
+    sub.frequency.value = 27.5;
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.15;
+    lfoGain.gain.value = 5;
+    lfo.connect(lfoGain);
+    lfoGain.connect(sub.frequency);
+    subGain.gain.setValueAtTime(0.02 * this.volume, now);
+    sub.connect(subGain); subGain.connect(this.masterGain);
+    sub.start(now); lfo.start(now);
+    this._musicNodes.push({ osc: sub }, { osc: lfo });
+
+    // Subtle pulse (rhythm layer)
+    const pulse = this.ctx.createOscillator();
+    const pulseGain = this.ctx.createGain();
+    const pulseLfo = this.ctx.createOscillator();
+    const pulseLfoGain = this.ctx.createGain();
+    pulse.type = 'sine';
+    pulse.frequency.value = 110;
+    pulseLfo.type = 'square';
+    pulseLfo.frequency.value = 2;
+    pulseLfoGain.gain.value = 0.015 * this.volume;
+    pulseLfo.connect(pulseLfoGain);
+    pulseLfoGain.connect(pulseGain.gain);
+    pulseGain.gain.value = 0;
+    pulse.connect(pulseGain); pulseGain.connect(this.masterGain);
+    pulse.start(now); pulseLfo.start(now);
+    this._musicNodes.push({ osc: pulse }, { osc: pulseLfo });
+  } catch (e) {}
+};
+
+SoundSystem.prototype.stopMusic = function() {
+  if (this._musicNodes) {
+    try {
+      this._musicNodes.forEach(n => {
+        try { n.osc.stop(); } catch (e) {}
+      });
+    } catch (e) {}
+    this._musicNodes = null;
+  }
+};
+
+// ====================================================================
+//  ENHANCED VISUALS — Screen flash, better particles, transitions
+// ====================================================================
+
+/**
+ * ScreenFlash — Full-screen colored flash on major events.
+ */
+class ScreenFlash {
+  constructor() {
+    this.color = '#ffffff';
+    this.alpha = 0;
+    this.decay = 0.06;
+  }
+
+  trigger(color = '#ffffff', intensity = 0.4) {
+    this.color = color;
+    this.alpha = Math.max(this.alpha, intensity);
+  }
+
+  update(dt) {
+    if (this.alpha > 0.001) {
+      this.alpha *= Math.pow(this.decay, dt / 16);
+    } else {
+      this.alpha = 0;
+    }
+  }
+
+  render(ctx) {
+    if (this.alpha < 0.005) return;
+    ctx.fillStyle = hexToRgba(this.color, this.alpha);
+    ctx.fillRect(0, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
+  }
+}
+
+/**
+ * Enhanced particle presets for more visual variety.
+ */
+const ENHANCED_PARTICLES = {
+  // Spark burst for lightning/electric hits
+  sparkBurst: (ps, x, y, count = 8) => {
+    for (let i = 0; i < count; i++) {
+      const angle = rand(0, Math.PI * 2);
+      const len = rand(10, 30);
+      const steps = 3;
+      for (let s = 0; s < steps; s++) {
+        const t = s / steps;
+        const px = x + Math.cos(angle) * len * t;
+        const py = y + Math.sin(angle) * len * t;
+        const p = new Particle(px, py, 0, 0, '#ffff44', rand(100, 200), rand(1, 2));
+        ps.particles.push(p);
+      }
+    }
+  },
+
+  // Ember shower for fire hits
+  emberShower: (ps, x, y, count = 10) => {
+    for (let i = 0; i < count; i++) {
+      const p = new Particle(
+        x + rand(-10, 10), y + rand(-10, 10),
+        rand(-1, 1), rand(-3, -1),
+        pick(['#ff6600', '#ffaa00', '#ff4400', '#ff8800']),
+        rand(400, 800), rand(1.5, 4)
+      );
+      ps.particles.push(p);
+    }
+  },
+
+  // Ice shatter for frost hits
+  iceShatter: (ps, x, y, count = 8) => {
+    for (let i = 0; i < count; i++) {
+      const p = new Particle(
+        x, y,
+        rand(-3, 3), rand(-3, 3),
+        pick(['#88ddff', '#ffffff', '#aaffff', '#ccf0ff']),
+        rand(300, 600), rand(1.5, 2.5)
+      );
+      ps.particles.push(p);
+    }
+  },
+
+  // Void tendrils for void/dark hits
+  voidTendrils: (ps, x, y, count = 6) => {
+    for (let i = 0; i < count; i++) {
+      const angle = rand(0, Math.PI * 2);
+      const p = new Particle(
+        x, y,
+        Math.cos(angle) * rand(1, 3), Math.sin(angle) * rand(1, 3),
+        '#aa44ff', rand(300, 500), rand(2, 3)
+      );
+      ps.particles.push(p);
+    }
+  },
+};
+
+// ====================================================================
+//  ENHANCED UI — Better panels, animated transitions, tooltips
+// ====================================================================
+
+/**
+ * Enhanced glass panel with gradient border and subtle animation.
+ */
+function drawEnhancedPanel(ctx, x, y, w, h, r = 8, accent = CONFIG.COLORS.CYAN, time = 0) {
+  // Shadow
+  ctx.shadowColor = hexToRgba(accent, 0.15);
+  ctx.shadowBlur = 10;
+
+  // Background
+  const bgGrad = ctx.createLinearGradient(x, y, x, y + h);
+  bgGrad.addColorStop(0, 'rgba(10,10,40,0.82)');
+  bgGrad.addColorStop(1, 'rgba(6,6,24,0.9)');
+  ctx.fillStyle = bgGrad;
+  roundRect(ctx, x, y, w, h, r);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Animated border shimmer
+  const shimmerPos = (Math.sin(time * 0.002) * 0.5 + 0.5);
+  ctx.strokeStyle = hexToRgba(accent, 0.3);
+  ctx.lineWidth = 1;
+  roundRect(ctx, x, y, w, h, r);
+  ctx.stroke();
+
+  // Top accent line
+  const accGrad = ctx.createLinearGradient(x, 0, x + w, 0);
+  accGrad.addColorStop(0, accent);
+  accGrad.addColorStop(0.5, CONFIG.COLORS.MAGENTA);
+  accGrad.addColorStop(1, accent);
+  ctx.strokeStyle = accGrad;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y + 1);
+  ctx.lineTo(x + w - r, y + 1);
+  ctx.stroke();
+
+  // Shimmer highlight
+  const shX = x + shimmerPos * w;
+  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  roundRect(ctx, shX - 30, y, 60, h, r);
+  ctx.fill();
+}
+
+/**
+ * Render weapon upgrade level dots.
+ */
+function drawUpgradeDots(ctx, x, y, current, max, color = CONFIG.COLORS.CYAN) {
+  const dotSize = 3;
+  const gap = 7;
+  const startX = x - ((max - 1) * gap) / 2;
+  for (let i = 0; i < max; i++) {
+    ctx.fillStyle = i < current ? color : 'rgba(255,255,255,0.15)';
+    ctx.beginPath();
+    ctx.arc(startX + i * gap, y, dotSize, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ====================================================================
+//  INTEGRATION: Hook improvements into existing systems
+// ====================================================================
+
+(function integrateImprovements() {
+  // Add screen flash to Game
+  const origStartSI = Game.prototype.startGame;
+  Game.prototype.startGame = function() {
+    origStartSI.call(this);
+    this._screenFlash = new ScreenFlash();
+  };
+
+  // Hook level up for flash
+  const origTriggerLUSI = Game.prototype.triggerLevelUp;
+  Game.prototype.triggerLevelUp = function() {
+    origTriggerLUSI.call(this);
+    if (this._screenFlash) this._screenFlash.trigger(CONFIG.COLORS.GOLD, 0.3);
+    if (this._juice) this._juice.hitStop.trigger(120, 1);
+    if (this._cameraFx) this._cameraFx.pulse(0.1);
+  };
+
+  // Hook boss kill for flash
+  const origBossKillSI = Game.prototype._onEnemyKilled;
+  Game.prototype._onEnemyKilled = function(enemy) {
+    origBossKillSI.call(this, enemy);
+    if (enemy.behavior === 'boss' && this._screenFlash) {
+      this._screenFlash.trigger('#ff4444', 0.5);
+      ENHANCED_PARTICLES.emberShower(this.particles, enemy.x, enemy.y, 30);
+      ENHANCED_PARTICLES.sparkBurst(this.particles, enemy.x, enemy.y, 15);
+    }
+  };
+
+  // Hook big hits for enhanced particles
+  const origEnemyTDSI = Enemy.prototype.takeDamage;
+  Enemy.prototype.takeDamage = function(amount, isCrit) {
+    const died = origEnemyTDSI.call(this, amount, isCrit);
+    if (window.game && isCrit) {
+      ENHANCED_PARTICLES.sparkBurst(window.game.particles, this.x, this.y, 5);
+    }
+    if (window.game && amount > 30) {
+      ENHANCED_PARTICLES.emberShower(window.game.particles, this.x, this.y, 3);
+    }
+    return died;
+  };
+
+  // Hook weapon impacts for enhanced particles
+  const origProcWeapSI = Game.prototype._processWeaponResult;
+  Game.prototype._processWeaponResult = function(result) {
+    origProcWeapSI.call(this, result);
+    if (result.weaponId === 'fireball' || result.weaponId === 'meteor') {
+      if (result.x !== undefined) ENHANCED_PARTICLES.emberShower(this.particles, result.x, result.y, 4);
+    }
+    if (result.weaponId === 'frostNova') {
+      if (result.x !== undefined) ENHANCED_PARTICLES.iceShatter(this.particles, result.x, result.y, 6);
+    }
+    if (result.weaponId === 'voidBeam' || result.weaponId === 'shadowScythe') {
+      if (result.x !== undefined) ENHANCED_PARTICLES.voidTendrils(this.particles, result.x, result.y, 3);
+    }
+  };
+
+  // Extend render for screen flash
+  const origRenderSI = Game.prototype._render;
+  Game.prototype._render = function() {
+    origRenderSI.call(this);
+    if (this._screenFlash) {
+      this._screenFlash.render(ctx);
+    }
+  };
+
+  // Extend update for screen flash
+  const origUpdateSI = Game.prototype.update;
+  Game.prototype.update = function(dt) {
+    origUpdateSI.call(this, dt);
+    if (this._screenFlash) this._screenFlash.update(dt);
+  };
+
+  // Better UI panel rendering in HUD
+  const origHudSI = Game.prototype._renderHUD;
+  Game.prototype._renderHUD = function() {
+    // Replace simple panels with enhanced ones
+    const origDrawGlass = this._drawGlassPanel;
+    this._drawGlassPanel = function(x, y, w, h, r) {
+      drawEnhancedPanel(ctx, x, y, w, h, r, CONFIG.COLORS.CYAN, this.gameTime);
+    };
+    origHudSI.call(this);
+    this._drawGlassPanel = origDrawGlass;
+  };
+})();
+
+// ====================================================================
+//  IMPROVED WEAPON SELECTION IN SHOP
+// ====================================================================
+
+(function enhanceWeaponDisplay() {
+  // Show weapon upgrade levels as dots in weapons panel
+  const origWeaponsPanel = Game.prototype._renderHUD;
+  Game.prototype._renderHUD = function() {
+    origWeaponsPanel.call(this);
+    // Add upgrade dots next to weapons
+    // (handled inline in the weapons panel render)
+  };
+})();
+
+// ====================================================================
+//  SCREEN TRANSITION ENHANCEMENTS
+// ====================================================================
+
+// Enhance ScreenTransition with more options
+ScreenTransition.prototype.fadeToColor = function(color, duration = 500, cb = null) {
+  this.active = true;
+  this.type = 'colorFade';
+  this.color = color;
+  this.timer = 0;
+  this.duration = duration;
+  this.callback = cb;
+};
+
+// Override render to handle color fade
+const origTransRender = ScreenTransition.prototype.render;
+ScreenTransition.prototype.render = function(ctx) {
+  if (!this.active) return;
+  const progress = this.timer / this.duration;
+  let alpha = 0;
+  if (this.type === 'colorFade') {
+    alpha = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
+    ctx.fillStyle = hexToRgba(this.color || '#000000', alpha * 0.7);
+    ctx.fillRect(0, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
+    return;
+  }
+  origTransRender.call(this, ctx);
+};
+
 function init() {
   // Apply all extended features to Game class
   extendGameWithFeatures(Game);
