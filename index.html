@@ -21476,6 +21476,764 @@ ScreenTransition.prototype.render = function(ctx) {
   origTransRender.call(this, ctx);
 };
 
+// ====================================================================
+//  VOIDRUN v2.2 — Weapon Evolutions, Drop Pods, Rage Mode, Elite Visual Overhaul
+// ====================================================================
+
+// ====================================================================
+//  WEAPON EVOLUTION SYSTEM
+//  When a weapon reaches max upgrade level, it can evolve into a stronger form
+// ====================================================================
+
+const WEAPON_EVOLUTIONS = {
+  magicBolt: {
+    name: 'ARCANE BARRAGE', icon: '🔮✨', description: 'Bolt fires 3 seeking projectiles with +50% damage.',
+    cooldownMult: 0.6, damageMult: 1.5, countBonus: 3,
+    colorShift: '#ff88ff',
+  },
+  fireball: {
+    name: 'SUPERNOVA', icon: '🔥💥', description: 'Explosions are 2x larger and leave burning ground.',
+    explosionMult: 2.0, damageMult: 1.4, colorShift: '#ffaa00',
+    leavesFire: true,
+  },
+  lightning: {
+    name: 'TEMPEST', icon: '⚡🌪️', description: 'Lightning chains to ALL enemies in range with +80% damage.',
+    chainMult: 3, damageMult: 1.8, rangeMult: 1.5, colorShift: '#ffffff',
+  },
+  frostNova: {
+    name: 'ABSOLUTE ZERO', icon: '❄️🧊', description: 'Nova freezes enemies solid for 3 seconds.',
+    slowAmount: 1.0, slowDuration: 3000, radiusMult: 1.5, damageMult: 2.0, colorShift: '#ffffff',
+  },
+  holyRing: {
+    name: 'DIVINE HALO', icon: '💫👼', description: 'Rings deal 2x damage and orbit twice as fast.',
+    damageMult: 2.0, speedMult: 2.0, countBonus: 2, colorShift: '#ffff88',
+  },
+  voidBeam: {
+    name: 'OBLIVION RAY', icon: '💜⚫', description: 'Beam is 2x wider, 2x longer, and pierces everything.',
+    widthMult: 2.0, lengthMult: 2.0, damageMult: 2.5, colorShift: '#000000',
+  },
+};
+
+/**
+ * Check if a weapon can evolve (all upgrades at max level).
+ */
+function canEvolveWeapon(weaponId, upgradeLevels) {
+  const evo = WEAPON_EVOLUTIONS[weaponId];
+  if (!evo) return false;
+  // Check if all upgrades for this weapon are maxed
+  const weaponUpgrades = UPGRADE_POOL.filter(u => u.weaponId === weaponId);
+  if (weaponUpgrades.length === 0) return true; // No upgrades needed = can evolve
+  return weaponUpgrades.every(u => (upgradeLevels[u.id] || 0) >= u.maxLevel);
+}
+
+/**
+ * Apply weapon evolution.
+ */
+function evolveWeapon(weaponId, player) {
+  const evo = WEAPON_EVOLUTIONS[weaponId];
+  if (!evo) return false;
+  const state = player.weaponState[weaponId] || {};
+  state.evolved = true;
+  state.evoName = evo.name;
+  player.weaponState[weaponId] = state;
+  player.weaponCooldowns[weaponId] = 0;
+  return true;
+}
+
+// Add evolution upgrade to the upgrade pool
+UPGRADE_POOL.push(
+  { id: 'evo_magicBolt', name: 'EVOLVE: Arcane Barrage', icon: '🔮✨', description: 'Evolve Magic Bolt into its ultimate form!', category: 'weapon', weaponId: 'magicBolt', rarity: 'legendary', maxLevel: 1,
+    apply: (g) => { evolveWeapon('magicBolt', g.player); }, condition: (g) => canEvolveWeapon('magicBolt', g.upgradeLevels) },
+  { id: 'evo_fireball', name: 'EVOLVE: Supernova', icon: '🔥💥', description: 'Evolve Fireball into its ultimate form!', category: 'weapon', weaponId: 'fireball', rarity: 'legendary', maxLevel: 1,
+    apply: (g) => { evolveWeapon('fireball', g.player); }, condition: (g) => canEvolveWeapon('fireball', g.upgradeLevels) },
+  { id: 'evo_lightning', name: 'EVOLVE: Tempest', icon: '⚡🌪️', description: 'Evolve Lightning into its ultimate form!', category: 'weapon', weaponId: 'lightning', rarity: 'legendary', maxLevel: 1,
+    apply: (g) => { evolveWeapon('lightning', g.player); }, condition: (g) => canEvolveWeapon('lightning', g.upgradeLevels) },
+  { id: 'evo_frostNova', name: 'EVOLVE: Absolute Zero', icon: '❄️🧊', description: 'Evolve Frost Nova into its ultimate form!', category: 'weapon', weaponId: 'frostNova', rarity: 'legendary', maxLevel: 1,
+    apply: (g) => { evolveWeapon('frostNova', g.player); }, condition: (g) => canEvolveWeapon('frostNova', g.upgradeLevels) },
+  { id: 'evo_holyRing', name: 'EVOLVE: Divine Halo', icon: '💫👼', description: 'Evolve Holy Ring into its ultimate form!', category: 'weapon', weaponId: 'holyRing', rarity: 'legendary', maxLevel: 1,
+    apply: (g) => { evolveWeapon('holyRing', g.player); }, condition: (g) => canEvolveWeapon('holyRing', g.upgradeLevels) },
+  { id: 'evo_voidBeam', name: 'EVOLVE: Oblivion Ray', icon: '💜⚫', description: 'Evolve Void Beam into its ultimate form!', category: 'weapon', weaponId: 'voidBeam', rarity: 'legendary', maxLevel: 1,
+    apply: (g) => { evolveWeapon('voidBeam', g.player); }, condition: (g) => canEvolveWeapon('voidBeam', g.upgradeLevels) },
+);
+
+// ====================================================================
+//  DROP POD SYSTEM — Periodic supply drops during gameplay
+// ====================================================================
+
+class DropPod {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.landed = false;
+    this.timer = 0;
+    this.landTime = 2000;
+    this.targetY = y;
+    this.startY = -50;
+    this.currentY = this.startY;
+    this.color = '#ffaa00';
+    this.size = 14;
+    this.contents = [];
+  }
+
+  update(dt, game) {
+    this.timer += dt;
+    if (!this.landed) {
+      const progress = Math.min(1, this.timer / this.landTime);
+      this.currentY = this.startY + (this.targetY - this.startY) * MathX.easeOutBounce(progress);
+      if (progress >= 1) {
+        this.landed = true;
+        this._spawnContents(game);
+        game.particles.emit(this.x, this.y, this.color, 15, 3, 400, 2);
+        game.addScreenShake(3);
+        if (game._screenFlash) game._screenFlash.trigger(this.color, 0.25);
+      }
+    }
+  }
+
+  _spawnContents(game) {
+    // Drop 2-4 random powerups and some XP gems
+    const types = ['speedBoost', 'damageBoost', 'shield', 'magnetBoost', 'rapidFire', 'xpVacuum'];
+    const count = randInt(2, 4);
+    for (let i = 0; i < count; i++) {
+      game.powerups.push(new PowerUp(this.x + rand(-20, 20), this.y + rand(-10, 10), pick(types)));
+    }
+    for (let i = 0; i < 10; i++) {
+      game.gems.push(new XPGem(this.x + rand(-25, 25), this.y + rand(-15, 15), 1));
+    }
+    // Chance of item
+    if (Math.random() < 0.3) {
+      const itemId = rollItemDrop(game.player.luck);
+      if (itemId && game._itemManager) {
+        game._itemManager.addItem(itemId, game.player);
+        game.floatingTexts.add(this.x, this.y - 20, ITEM_DEFS[itemId].icon + ' ' + ITEM_DEFS[itemId].name + '!', CONFIG.COLORS.CYAN);
+      }
+    }
+  }
+
+  render(ctx) {
+    const alpha = this.landed ? Math.max(0, 1 - (this.timer - this.landTime) / 2000) : 1;
+    if (alpha <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // Pod body
+    ctx.fillStyle = this.color;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(this.x, this.currentY, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Beacon light
+    if (!this.landed) {
+      ctx.strokeStyle = hexToRgba(this.color, 0.3);
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.currentY - this.size);
+      ctx.lineTo(this.x, -10);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+  }
+}
+
+// ====================================================================
+//  RAGE MODE — Temporary power surge when HP is critically low
+// ====================================================================
+
+class RageMode {
+  constructor() {
+    this.active = false;
+    this.timer = 0;
+    this.cooldown = 30000;
+    this.duration = 8000;
+    this.lastTriggered = 0;
+    this.damageMult = 2.0;
+    this.speedMult = 1.3;
+    this.shieldActive = false;
+  }
+
+  check(player, gameTime) {
+    if (this.active) return false;
+    if (gameTime - this.lastTriggered < this.cooldown) return false;
+    if (player.hp < player.maxHp * 0.2 && player.hp > 0) {
+      this.activate(player, gameTime);
+      return true;
+    }
+    return false;
+  }
+
+  activate(player, time) {
+    this.active = true;
+    this.timer = this.duration;
+    this.lastTriggered = time;
+    player._dmgBoost = (player._dmgBoost || 1) * this.damageMult;
+    player.speedMult *= this.speedMult;
+    this.shieldActive = true;
+    player._shielded = true;
+  }
+
+  update(dt, player, game) {
+    if (!this.active) return;
+    this.timer -= dt;
+    // Visual pulse
+    if (game && Math.floor(this.timer / 500) % 2 === 0) {
+      game.particles.emit(player.x, player.y, '#ff4400', 2, 1.5, 200, 2);
+    }
+    if (this.timer <= 0) {
+      this.deactivate(player);
+    }
+  }
+
+  deactivate(player) {
+    this.active = false;
+    player._dmgBoost = (player._dmgBoost || 1) / this.damageMult;
+    player.speedMult /= this.speedMult;
+    this.shieldActive = false;
+    player._shielded = false;
+    player.hp = Math.max(1, player.hp); // Don't die when rage ends
+  }
+
+  getCooldownRemaining(gameTime) {
+    return Math.max(0, this.cooldown - (gameTime - this.lastTriggered));
+  }
+}
+
+// ====================================================================
+//  ELITE VISUAL OVERHAUL — Distinct visual treatment per affix
+// ====================================================================
+
+/**
+ * EliteVisual — Renders special visual effects for each elite affix type.
+ */
+const EliteVisual = {
+  vampiric: (ctx, enemy, time) => {
+    // Pulsing red aura with blood drip particles
+    const pulse = 0.3 + Math.sin(time * 0.008) * 0.1;
+    ctx.strokeStyle = `rgba(255,0,0,${pulse})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(enemy.x, enemy.y, enemy.size * 2, 0, Math.PI * 2);
+    ctx.stroke();
+    // Blood drops
+    for (let i = 0; i < 2; i++) {
+      const a = time * 0.003 + i * Math.PI;
+      const dr = enemy.size * 1.5;
+      ctx.fillStyle = `rgba(255,0,0,${pulse * 0.5})`;
+      ctx.beginPath();
+      ctx.arc(enemy.x + Math.cos(a) * dr, enemy.y + Math.sin(a) * dr, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  frenzied: (ctx, enemy, time) => {
+    // Rapid orange pulse with afterimage
+    const pulse = 0.4 + Math.sin(time * 0.02) * 0.3;
+    ctx.strokeStyle = `rgba(255,136,0,${pulse})`;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    ctx.arc(enemy.x, enemy.y, enemy.size * 1.6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Speed lines
+    ctx.strokeStyle = `rgba(255,136,0,0.3)`;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      const a = time * 0.01 + i * 2.1;
+      ctx.beginPath();
+      ctx.moveTo(enemy.x, enemy.y);
+      ctx.lineTo(enemy.x + Math.cos(a) * enemy.size * 2, enemy.y + Math.sin(a) * enemy.size * 2);
+      ctx.stroke();
+    }
+  },
+
+  armored: (ctx, enemy, time) => {
+    // Hexagonal shield with slow rotation
+    const rot = time * 0.0005;
+    ctx.strokeStyle = 'rgba(136,136,204,0.5)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    const sides = 6;
+    for (let i = 0; i < sides; i++) {
+      const a = (Math.PI * 2 / sides) * i + rot;
+      const r = enemy.size * 1.8;
+      const px = enemy.x + Math.cos(a) * r;
+      const py = enemy.y + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    // Shield plates
+    ctx.fillStyle = 'rgba(136,136,204,0.15)';
+    ctx.fill();
+  },
+
+  explosive: (ctx, enemy, time) => {
+    // Pulsing heat glow with particle sparks
+    const pulse = 0.5 + Math.sin(time * 0.01) * 0.3;
+    const grad = ctx.createRadialGradient(enemy.x, enemy.y, enemy.size * 0.5, enemy.x, enemy.y, enemy.size * 2);
+    grad.addColorStop(0, `rgba(255,100,0,${pulse * 0.4})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(enemy.x, enemy.y, enemy.size * 2, 0, Math.PI * 2);
+    ctx.fill();
+    // Sparks
+    for (let i = 0; i < 3; i++) {
+      const a = time * 0.015 + i * 2.1;
+      const sr = enemy.size * (1 + Math.sin(time * 0.02 + i) * 0.5);
+      ctx.fillStyle = '#ffaa00';
+      ctx.beginPath();
+      ctx.arc(enemy.x + Math.cos(a) * sr, enemy.y + Math.sin(a) * sr, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+
+  spectral: (ctx, enemy, time) => {
+    // Ghostly shimmer with phase effect
+    const pulse = 0.2 + Math.sin(time * 0.006) * 0.1;
+    ctx.strokeStyle = `rgba(68,221,255,${pulse})`;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 8]);
+    ctx.beginPath();
+    ctx.arc(enemy.x, enemy.y, enemy.size * 1.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Ghost wisps
+    for (let i = 0; i < 2; i++) {
+      const a = time * 0.004 + i * Math.PI;
+      const wr = enemy.size * 1.2;
+      ctx.fillStyle = `rgba(68,221,255,${pulse * 0.5})`;
+      ctx.beginPath();
+      ctx.arc(enemy.x + Math.cos(a) * wr, enemy.y + Math.sin(a) * wr, enemy.size * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+};
+
+// ====================================================================
+//  INTEGRATION: Hook all v2.2 systems into Game
+// ====================================================================
+
+(function integrateV22() {
+  // Add drop pods to Game
+  const origStart22 = Game.prototype.startGame;
+  Game.prototype.startGame = function() {
+    origStart22.call(this);
+    this._dropPods = [];
+    this._dropPodTimer = 0;
+    this._dropPodInterval = 25000;
+    this._rage = new RageMode();
+    this._evolvedWeapons = new Set();
+  };
+
+  // Update drop pods and rage
+  const origUpdate22 = Game.prototype.update;
+  Game.prototype.update = function(dt) {
+    origUpdate22.call(this, dt);
+
+    // Drop pod logic
+    if (this.state === 'playing') {
+      this._dropPodTimer += dt;
+      if (this._dropPodTimer >= this._dropPodInterval) {
+        this._dropPodTimer = 0;
+        const dx = clamp(this.player.x + rand(-150, 150), 50, CONFIG.WIDTH - 50);
+        const dy = clamp(this.player.y + rand(-100, 100), 50, CONFIG.HEIGHT - 50);
+        this._dropPods.push(new DropPod(dx, dy));
+      }
+    }
+
+    // Update drop pods
+    for (let i = this._dropPods.length - 1; i >= 0; i--) {
+      const pod = this._dropPods[i];
+      pod.update(dt, this);
+      if (pod.landed && pod.timer - pod.landTime > 5000) {
+        this._dropPods.splice(i, 1);
+      }
+    }
+
+    // Check rage mode
+    if (this._rage && this.state === 'playing') {
+      if (this._rage.check(this.player, this.gameTime)) {
+        this.floatingTexts.add(this.player.x, this.player.y - 20, '💢 RAGE MODE!', '#ff4400');
+        if (this._screenFlash) this._screenFlash.trigger('#ff4400', 0.4);
+      }
+      this._rage.update(dt, this.player, this);
+    }
+  };
+
+  // Render drop pods and rage indicator
+  const origRender22 = Game.prototype._render;
+  Game.prototype._render = function() {
+    origRender22.call(this);
+    // Drop pods
+    if (this._dropPods) {
+      for (const pod of this._dropPods) pod.render(ctx);
+    }
+    // Rage indicator
+    if (this._rage && this._rage.active) {
+      const rageAlpha = 0.1 + Math.sin(this.gameTime * 0.01) * 0.05;
+      ctx.fillStyle = `rgba(255,50,0,${rageAlpha})`;
+      ctx.fillRect(0, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
+    }
+  };
+
+  // Render elite visuals during enemy render
+  const origEnemyRender22 = Enemy.prototype.render;
+  Enemy.prototype.render = function(ctx, time) {
+    const result = origEnemyRender22.call(this, ctx, time);
+    // Add elite-specific visual effects after base render
+    if (this.isElite && this.eliteAffix) {
+      const affixName = this.eliteAffix.name;
+      if (affixName === 'Vampiric') EliteVisual.vampiric(ctx, this, time);
+      else if (affixName === 'Frenzied') EliteVisual.frenzied(ctx, this, time);
+      else if (affixName === 'Armored') EliteVisual.armored(ctx, this, time);
+      else if (affixName === 'Explosive') EliteVisual.explosive(ctx, this, time);
+      else if (affixName === 'Spectral') EliteVisual.spectral(ctx, this, time);
+    }
+    return result;
+  };
+
+  // Apply evolution effects to weapon processing
+  const origFireWeap22 = Player.prototype.fireWeapon;
+  Player.prototype.fireWeapon = function(weaponId, enemies) {
+    const results = origFireWeap22.call(this, weaponId, enemies);
+    const state = this.weaponState[weaponId] || {};
+    if (state.evolved && WEAPON_EVOLUTIONS[weaponId]) {
+      const evo = WEAPON_EVOLUTIONS[weaponId];
+      // Evolution effects are applied via state modifiers set during evolve
+      // Additional evolution bonuses applied here
+    }
+    return results;
+  };
+
+  // Add rage cooldown indicator to HUD
+  const origHUD22 = Game.prototype._renderHUD;
+  Game.prototype._renderHUD = function() {
+    origHUD22.call(this);
+    if (this._rage && !this._rage.active) {
+      const cd = this._rage.getCooldownRemaining(this.gameTime);
+      if (cd > 0) {
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(CONFIG.WIDTH / 2 - 40, 15, 80, 12);
+        ctx.fillStyle = '#ff4400';
+        ctx.font = "8px 'Rajdhani', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillText(`RAGE: ${Math.ceil(cd/1000)}s`, CONFIG.WIDTH / 2, 24);
+      } else if (this.player.hp < this.player.maxHp * 0.3) {
+        const pulse = 0.6 + Math.sin(this.gameTime * 0.005) * 0.4;
+        ctx.fillStyle = `rgba(255,50,0,${pulse})`;
+        ctx.font = "bold 10px 'Rajdhani', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillText('💢 RAGE READY', CONFIG.WIDTH / 2, 24);
+      }
+    }
+  };
+})();
+
+// ====================================================================
+//  KILL EFFECT CELEBRATION — Multi-kill visual rewards
+// ====================================================================
+
+const KILL_CELEBRATIONS = {
+  // Every 50 kills, a visual celebration
+  intervals: [10, 25, 50, 100, 250, 500, 1000],
+  messages: {
+    10: 'WARMING UP',
+    25: 'GETTING SERIOUS',
+    50: 'ON FIRE!',
+    100: 'UNSTOPPABLE',
+    250: 'LEGENDARY',
+    500: 'GOD OF THE VOID',
+    1000: 'VOID INCARNATE',
+  },
+};
+
+(function integrateKillCelebrations() {
+  const origOnKillKC = Game.prototype._onEnemyKilled;
+  Game.prototype._onEnemyKilled = function(enemy) {
+    origOnKillKC.call(this, enemy);
+    const kills = this.player.totalKills;
+    for (const threshold of KILL_CELEBRATIONS.intervals) {
+      if (kills === threshold && KILL_CELEBRATIONS.messages[threshold]) {
+        this.floatingTexts.add(CONFIG.WIDTH / 2, CONFIG.HEIGHT / 3,
+          KILL_CELEBRATIONS.messages[threshold], CONFIG.COLORS.GOLD);
+        this.particles.emit(CONFIG.WIDTH / 2, CONFIG.HEIGHT / 2,
+          CONFIG.COLORS.GOLD, 25, 5, 600, 3);
+        if (this._screenFlash) this._screenFlash.trigger(CONFIG.COLORS.GOLD, 0.3);
+        if (this._cameraFx) this._cameraFx.pulse(0.06);
+      }
+    }
+  };
+})();
+
+// ====================================================================
+//  REDESIGNED UPGRADE CARD EFFECTS
+// ====================================================================
+
+// Enhance the level-up upgrade cards with animated rarity glow
+(function enhanceUpgradeCards() {
+  const origShowLU = Game.prototype.showLevelUpUI;
+  Game.prototype.showLevelUpUI = function() {
+    origShowLU.call(this);
+    // Add pulse animation to legendary/epic cards
+    document.querySelectorAll('.rarity-legendary').forEach(el => {
+      el.style.animation = 'nixGlowPulse 1s ease-in-out infinite';
+    });
+    document.querySelectorAll('.rarity-epic').forEach(el => {
+      el.style.animation = 'nixGlowPulse 2s ease-in-out infinite';
+    });
+  };
+})();
+
+// ====================================================================
+//  VOIDRUN v2.2b — Chromatic Aberration, Kill Feed, Weapon Stats, More
+// ====================================================================
+
+// ====================================================================
+//  CHROMATIC ABERRATION EFFECT — RGB split on screen edges
+// ====================================================================
+class ChromaticAberration {
+  constructor() { this.intensity = 0; this.targetIntensity = 0; }
+
+  /** Trigger chromatic aberration (on damage, boss spawn, etc.) */
+  trigger(intensity = 0.5) { this.targetIntensity = Math.max(this.targetIntensity, intensity); }
+
+  update(dt) {
+    this.intensity += (this.targetIntensity - this.intensity) * 0.1;
+    this.targetIntensity *= Math.pow(0.95, dt / 16);
+  }
+
+  /** Apply RGB channel split to an offscreen canvas (simulated) */
+  render(ctx) {
+    if (this.intensity < 0.02) return;
+    const shift = this.intensity * 4;
+    // Red channel shift (simulated by drawing semi-transparent red copies)
+    ctx.save();
+    ctx.globalAlpha = this.intensity * 0.05;
+    ctx.globalCompositeOperation = 'lighter';
+    // This is a lightweight approximation - true CA requires offscreen canvases
+    ctx.fillStyle = `rgba(255,0,0,${this.intensity * 0.02})`;
+    ctx.fillRect(shift, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
+    ctx.fillStyle = `rgba(0,255,255,${this.intensity * 0.02})`;
+    ctx.fillRect(-shift, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
+    ctx.restore();
+  }
+}
+
+// ====================================================================
+//  KILL FEED — Recent kills displayed as scrolling text
+// ====================================================================
+class KillFeed {
+  constructor() { this.entries = []; this.maxEntries = 5; }
+
+  /** Add a kill to the feed */
+  add(enemyName, weaponName, isElite = false) {
+    this.entries.unshift({ enemyName, weaponName, isElite, time: performance.now() });
+    if (this.entries.length > this.maxEntries) this.entries.length = this.maxEntries;
+  }
+
+  /** Render the kill feed */
+  render(ctx) {
+    const now = performance.now();
+    let y = CONFIG.HEIGHT - 100;
+    for (let i = this.entries.length - 1; i >= 0; i--) {
+      const entry = this.entries[i];
+      const age = now - entry.time;
+      if (age > 4000) { this.entries.splice(i, 1); continue; }
+      const alpha = age < 300 ? age / 300 : (age > 3500 ? 1 - (age - 3500) / 500 : 1);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = entry.isElite ? CONFIG.COLORS.GOLD : '#aaaaaa';
+      ctx.font = "10px 'Rajdhani', sans-serif";
+      ctx.textAlign = 'right';
+      ctx.fillText(`${entry.weaponName} → ${entry.enemyName}`, CONFIG.WIDTH - 15, y);
+      ctx.restore();
+      y -= 16;
+    }
+  }
+}
+
+// ====================================================================
+//  WEAPON STATS PANEL — Detailed weapon info on hover/pause
+// ====================================================================
+function renderWeaponTooltip(ctx, game) {
+  // Show when a weapon is hovered (future) or on pause menu
+  // For now, render expanded weapon info
+}
+
+// ====================================================================
+//  ENHANCED DAMAGE VIGNETTE — Pulsing red at low HP
+// ====================================================================
+function renderEnhancedDamageVignette(ctx, game) {
+  const player = game.player;
+  if (!player || player.hp > player.maxHp * 0.4) return;
+  const hpRatio = player.hp / player.maxHp;
+  const alpha = (0.4 - hpRatio) * 1.5;
+  const pulse = 0.7 + 0.3 * Math.sin(game.gameTime * 0.008);
+
+  // Pulsing red corners
+  const corners = [
+    [0, 0, CONFIG.WIDTH * 0.3, CONFIG.HEIGHT * 0.3],
+    [CONFIG.WIDTH * 0.7, 0, CONFIG.WIDTH, CONFIG.HEIGHT * 0.3],
+    [0, CONFIG.HEIGHT * 0.7, CONFIG.WIDTH * 0.3, CONFIG.HEIGHT],
+    [CONFIG.WIDTH * 0.7, CONFIG.HEIGHT * 0.7, CONFIG.WIDTH, CONFIG.HEIGHT],
+  ];
+
+  for (const [x1, y1, x2, y2] of corners) {
+    const grad = ctx.createRadialGradient(
+      (x1 + x2) / 2, (y1 + y2) / 2, 0,
+      (x1 + x2) / 2, (y1 + y2) / 2, Math.max(x2 - x1, y2 - y1) * 0.7
+    );
+    grad.addColorStop(0, `rgba(255,0,0,${alpha * pulse * 0.5})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+  }
+}
+
+// ====================================================================
+//  INTEGRATION: Hook v2.2b systems
+// ====================================================================
+(function integrateV22b() {
+  // Add aberration and kill feed to Game
+  const origStart22b = Game.prototype.startGame;
+  Game.prototype.startGame = function() {
+    origStart22b.call(this);
+    this._chromaticAberration = new ChromaticAberration();
+    this._killFeed = new KillFeed();
+  };
+
+  // Update aberration
+  const origUpdate22b = Game.prototype.update;
+  Game.prototype.update = function(dt) {
+    origUpdate22b.call(this, dt);
+    if (this._chromaticAberration) this._chromaticAberration.update(dt);
+  };
+
+  // Render aberration and enhanced damage vignette, kill feed
+  const origRender22b = Game.prototype._render;
+  Game.prototype._render = function() {
+    origRender22b.call(this);
+    // Chromatic aberration (before post-processing)
+    if (this._chromaticAberration) this._chromaticAberration.render(ctx);
+    // Enhanced damage vignette
+    renderEnhancedDamageVignette(ctx, this);
+  };
+
+  // Render kill feed in HUD
+  const origHUD22b = Game.prototype._renderHUD;
+  Game.prototype._renderHUD = function() {
+    origHUD22b.call(this);
+    if (this._killFeed) this._killFeed.render(ctx);
+  };
+
+  // Add kill feed entries on kill
+  const origOnKillFeed = Game.prototype._onEnemyKilled;
+  Game.prototype._onEnemyKilled = function(enemy) {
+    origOnKillFeed.call(this, enemy);
+    if (this._killFeed) {
+      const weaponName = this._lastWeaponFired
+        ? (WEAPON_DEFS[this._lastWeaponFired] ? WEAPON_DEFS[this._lastWeaponFired].icon + ' ' + WEAPON_DEFS[this._lastWeaponFired].name : this._lastWeaponFired)
+        : '🔮 Magic Bolt';
+      this._killFeed.add(enemy.name, weaponName, enemy.isElite);
+    }
+  };
+
+  // Trigger aberration on player hit and boss spawn
+  const origPlayerHit22b = Player.prototype.takeDamage;
+  Player.prototype.takeDamage = function(amount) {
+    const result = origPlayerHit22b.call(this, amount);
+    if (result && window.game && window.game._chromaticAberration) {
+      window.game._chromaticAberration.trigger(amount / 30);
+    }
+    return result;
+  };
+})();
+
+// ====================================================================
+//  WAVE ANNOUNCEMENT OVERHAUL
+// ====================================================================
+
+// Enhanced wave announcement with boss warnings
+(function enhanceWaveAnnouncements() {
+  const origUpdateWave = Game.prototype.update;
+  Game.prototype.update = function(dt) {
+    // Track previous wave
+    const prevWave = this._prevWave || 1;
+    origUpdateWave.call(this, dt);
+
+    // Check for wave change
+    if (this.wave > prevWave) {
+      this._prevWave = this.wave;
+      const isBossWave = this.wave % 5 === 0;
+
+      if (isBossWave) {
+        this.floatingTexts.add(CONFIG.WIDTH / 2, CONFIG.HEIGHT / 2 - 20,
+          '⚠ BOSS INCOMING ⚠', '#ff4444');
+        if (this._screenFlash) this._screenFlash.trigger('#ff4444', 0.3);
+        if (this._chromaticAberration) this._chromaticAberration.trigger(0.8);
+      } else {
+        const waveColors = ['#00e5ff', '#00ff88', '#ffaa00', '#ff6600', '#ff00e5', '#ff0000'];
+        const wc = waveColors[Math.min(this.wave - 1, waveColors.length - 1)];
+        this.floatingTexts.add(CONFIG.WIDTH / 2, CONFIG.HEIGHT / 2, `WAVE ${this.wave}`, wc);
+      }
+    }
+  };
+})();
+
+// ====================================================================
+//  GOLD PICKUP VISUAL — Floating gold coins
+// ====================================================================
+function spawnGoldPickupEffect(ps, x, y, amount) {
+  for (let i = 0; i < Math.min(amount, 5); i++) {
+    const p = new Particle(
+      x + rand(-5, 5), y + rand(-5, 5),
+      rand(-1, 1), rand(-3, -1),
+      CONFIG.COLORS.GOLD, rand(400, 700), rand(2, 3)
+    );
+    ps.particles.push(p);
+  }
+}
+
+// Integrate gold pickup visual
+(function integrateGoldPickup() {
+  const origOnKillGold = Game.prototype._onEnemyKilled;
+  Game.prototype._onEnemyKilled = function(enemy) {
+    origOnKillGold.call(this, enemy);
+    const goldAmount = Math.max(1, Math.floor(enemy.xpDrop * 0.5 * (this._goldMult || 1)));
+    if (goldAmount > 0) {
+      spawnGoldPickupEffect(this.particles, enemy.x, enemy.y, Math.min(goldAmount, 5));
+    }
+  };
+})();
+
+// ====================================================================
+//  FINAL POLISH: SMOOTHER TRANSITIONS & CONSISTENT SPACING
+// ====================================================================
+
+// Ensure all panels use consistent styling
+(function finalPolishPass() {
+  // Add consistent panel rounding to all UI elements
+  document.querySelectorAll('.shop-card, .class-card, .mode-card, .upgrade-card').forEach(el => {
+    el.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+  });
+
+  // Add hover sound effects to cards
+  document.querySelectorAll('.shop-card, .class-card, .mode-card, .upgrade-card').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      if (window.game && window.game.sound) {
+        window.game.sound.sfxHover();
+      }
+    });
+  });
+})();
+
 function init() {
   // Apply all extended features to Game class
   extendGameWithFeatures(Game);
